@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from math import sqrt, fabs, pow, acos, pi
 import argparse
 import sys
 
@@ -47,12 +48,24 @@ def distancia(a,origem):
     modA = np.linalg.norm(A)
     return modA
 
+def angulo(s,f,e):
+    l1 = distancia(f,s)
+    l2 = distancia(f,e)
+    ponto = (s[0] - f[0]) * (e[0] - f[0]) + (s[1] - f[1]) * (e[1] - f[1])
+    try:
+        angulo = acos(ponto/(l1*l2))
+    except ValueError:
+        return 0    
+    angulo = (angulo*180)/pi
+    return angulo
+
 if __name__ == "__main__":
     extrator = cv2.createBackgroundSubtractorMOG2() #extrator do cenario
     extrator.setDetectShadows(False) #nao detectar as sombras
     cont = 0 #contador de frames
     pause = False
-
+    cx = 0
+    cy = 0
     while(cont<args.frames):
         cont += 1;
         ret, frame = cap.read()
@@ -67,19 +80,22 @@ if __name__ == "__main__":
     while(cap.isOpened()):
         #recebe imagem, transforma cinza, aplica blur, aplica limiarizacao, busca por contornos e cria uma matriz de zeros
         if not pause:
-            ok,img = cap.read()
-            if not ok:
-                break
+            img = cap.read()[1]
+            
+            #b,g,r = cv2.split(img)
             gray = extrator.apply(img,None,0)
-            blur = cv2.medianBlur(gray, 5)
-            contours, hierarchy = cv2.findContours(blur,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+            #blur = cv2.medianBlur(gray, 5)
+            try:
+                contours, hierarchy = cv2.findContours(gray,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+            except:
+                break
             if(len(contours) > 0):
                 cnt = contours[0]
                 #busca maior contorno e salva em cnt
                 for i in contours:
                         if(len(i)>len(cnt)):
                             cnt=i
-
+                
                 #gera a envoltoria convexa
                 hull = cv2.convexHull(cnt)
 
@@ -94,24 +110,40 @@ if __name__ == "__main__":
                 cv2.circle(img,centr,5,[0,0,255],2)
 
                 #desenha o contorno maior em verde na matriz de zeros
-                cv2.drawContours(img,[cnt],0,verde,2)
+                cv2.drawContours(img,[cnt],0,(0,255,0),2)
                 hull = cv2.approxPolyDP(hull,epsilon=13,closed=True)
-
-                cv2.drawContours(img,[hull],0,verde,2)
-
+                #dedos = 
+                cv2.drawContours(img,[hull],0,(0,0,255),2)
+                j = 0
                 d_maior = 0
                 maior_dedo = hull[0]
                 for i in hull:
                     if i[0][1] < 400:
-                        ponto = (i[0][0],i[0][1])
-                        d = distancia(ponto,centr)
+                        j = j + 1
+                        cv2.line(img, (i[0][0],i[0][1]), (cx,cy), azul, 2)
+                        cv2.putText(img,str(j),(i[0][0],i[0][1]),1,1,branco)
+                        cv2.putText(img,str(distancia((i[0][0],i[0][1]),(cx,cy))),(i[0][0],i[0][1] + 20),1,1,branco)
+                        d = distancia((i[0][0],i[0][1]), (cx,cy))
                         if d > d_maior:
                             maior_dedo = i
                             d_maior = d
-                        cv2.line(img, centr, ponto, azul, 1)
-                calculaEixos(centr,maior_dedo)
+                
+                ###############3
+                
+                for i in hull:
+                    if i[0][1] < 400:
+                        inicio = (i[0][0],i[0][1]) 
+                        cv2.putText(img,str(angulo(inicio,centr,maior_dedo[0])), (i[0][0],i[0][1] + 40),1,1,branco)
+                ################3
+                
+                #gera um retalgulo no contorno escolhido
+                x,y,w,h = cv2.boundingRect(cnt)
+                cv2.rectangle(img,(x,y),(x+w,y+h),ciano,2)
 
                 cv2.imshow('input',img)
+                #cv2.imshow('r',r)
+                #cv2.imshow('g',g)
+                #cv2.imshow('b',b)                     
 
         k = cv2.waitKey(30) & 0xFF
         if k == 27:
