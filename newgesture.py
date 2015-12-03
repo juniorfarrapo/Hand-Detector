@@ -121,8 +121,8 @@ if __name__ == "__main__":
                     if i[0][1] < 400:
                         j = j + 1
                         cv2.line(img, (i[0][0],i[0][1]), (cx,cy), azul, 2)
-                        cv2.putText(img,str(j),(i[0][0],i[0][1]),1,1,branco)
-                        cv2.putText(img,str(distancia((i[0][0],i[0][1]),(cx,cy))),(i[0][0],i[0][1] + 20),1,1,branco)
+                        #cv2.putText(img,str(j),(i[0][0],i[0][1]),1,1,branco)
+                        #cv2.putText(img,str(distancia((i[0][0],i[0][1]),(cx,cy))),(i[0][0],i[0][1] + 20),1,1,branco)
                         d = distancia((i[0][0],i[0][1]), (cx,cy))
                         if d > d_maior:
                             maior_dedo = i
@@ -133,12 +133,22 @@ if __name__ == "__main__":
                 for i in hull:
                     if i[0][1] < 400:
                         inicio = (i[0][0],i[0][1]) 
-                        cv2.putText(img,str(angulo(inicio,centr,maior_dedo[0])), (i[0][0],i[0][1] + 40),1,1,branco)
+                        #cv2.putText(img,str(angulo(inicio,centr,maior_dedo[0])), (i[0][0],i[0][1] + 40),1,1,branco)
+                        if(angulo(inicio,centr,maior_dedo[0])>20 and angulo(inicio,centr,maior_dedo[0])<35 and inicio[0]<maior_dedo[0][0]):
+                            cv2.putText(img,'anelar', (i[0][0],i[0][1] + 40),1,1,branco)
+                        elif(angulo(inicio,centr,maior_dedo[0])>40 and angulo(inicio,centr,maior_dedo[0])<55 and inicio[0]<maior_dedo[0][0]):
+                            cv2.putText(img,'minimo', (i[0][0],i[0][1] + 40),1,1,branco)
+                        elif(angulo(inicio,centr,maior_dedo[0])==0):
+                            cv2.putText(img,'medio', (i[0][0],i[0][1] + 40),1,1,branco)
+                        elif(angulo(inicio,centr,maior_dedo[0])>20 and angulo(inicio,centr,maior_dedo[0])<35 and inicio[0]>maior_dedo[0][0]):
+                            cv2.putText(img,'indicador', (i[0][0],i[0][1] + 40),1,1,branco)
+                        elif(angulo(inicio,centr,maior_dedo[0])>40 and angulo(inicio,centr,maior_dedo[0])<120 and inicio[0]>maior_dedo[0][0]):
+                            cv2.putText(img,'polegar', (i[0][0],i[0][1] + 40),1,1,branco)
                 ################3
                 
                 #gera um retalgulo no contorno escolhido
-                x,y,w,h = cv2.boundingRect(cnt)
-                cv2.rectangle(img,(x,y),(x+w,y+h),ciano,2)
+                #x,y,w,h = cv2.boundingRect(cnt)
+                #cv2.rectangle(img,(x,y),(x+w,y+h),ciano,2)
 
                 cv2.imshow('input',img)
                 #cv2.imshow('r',r)
