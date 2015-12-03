@@ -14,6 +14,9 @@ amarelo = [0, 255, 255]
 preto = [0, 0, 0]
 branco = [255, 255, 255]
 
+dedos = np.zeros((5,5,4))
+dedos_cont = 0;
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-nf","--frames",type=int,default=30) #Numero de Frames para aprender o cenario
 parser.add_argument("arquivo",nargs="?",default=None) #Nome do arquivo, se houver
@@ -112,28 +115,31 @@ if __name__ == "__main__":
                 #desenha o contorno maior em verde na matriz de zeros
                 cv2.drawContours(img,[cnt],0,(0,255,0),2)
                 hull = cv2.approxPolyDP(hull,epsilon=13,closed=True)
-                #dedos = 
+                
                 cv2.drawContours(img,[hull],0,(0,0,255),2)
                 j = 0
                 d_maior = 0
                 maior_dedo = hull[0]
                 for i in hull:
                     if i[0][1] < 400:
-                        j = j + 1
+                        dedos[dedos_cont,j,0] = i[0][0]
+                        dedos[dedos_cont,j,1] = i[0][1]
                         cv2.line(img, (i[0][0],i[0][1]), (cx,cy), azul, 2)
-                        #cv2.putText(img,str(j),(i[0][0],i[0][1]),1,1,branco)
-                        #cv2.putText(img,str(distancia((i[0][0],i[0][1]),(cx,cy))),(i[0][0],i[0][1] + 20),1,1,branco)
                         d = distancia((i[0][0],i[0][1]), (cx,cy))
+                        j = j + 1
                         if d > d_maior:
                             maior_dedo = i
                             d_maior = d
                 
-                ###############3
+                ###############
                 
+
+                for i in range(0,5):
+                    dedos[dedos_cont,j,2] = angulo((dedos[dedos_cont,1,0],dedos[dedos_cont,1,1]),centr,maior_dedo[0])
+
                 for i in hull:
                     if i[0][1] < 400:
                         inicio = (i[0][0],i[0][1]) 
-                        #cv2.putText(img,str(angulo(inicio,centr,maior_dedo[0])), (i[0][0],i[0][1] + 40),1,1,branco)
                         if(angulo(inicio,centr,maior_dedo[0])>20 and angulo(inicio,centr,maior_dedo[0])<35 and inicio[0]<maior_dedo[0][0]):
                             cv2.putText(img,'anelar', (i[0][0],i[0][1] + 40),1,1,branco)
                         elif(angulo(inicio,centr,maior_dedo[0])>40 and angulo(inicio,centr,maior_dedo[0])<55 and inicio[0]<maior_dedo[0][0]):
@@ -144,16 +150,13 @@ if __name__ == "__main__":
                             cv2.putText(img,'indicador', (i[0][0],i[0][1] + 40),1,1,branco)
                         elif(angulo(inicio,centr,maior_dedo[0])>40 and angulo(inicio,centr,maior_dedo[0])<120 and inicio[0]>maior_dedo[0][0]):
                             cv2.putText(img,'polegar', (i[0][0],i[0][1] + 40),1,1,branco)
-                ################3
                 
-                #gera um retalgulo no contorno escolhido
-                #x,y,w,h = cv2.boundingRect(cnt)
-                #cv2.rectangle(img,(x,y),(x+w,y+h),ciano,2)
+                dedos_cont +=1
+                if(dedos_cont>=5):
+                    dedos_cont = 0
+                ################
 
-                cv2.imshow('input',img)
-                #cv2.imshow('r',r)
-                #cv2.imshow('g',g)
-                #cv2.imshow('b',b)                     
+                cv2.imshow('input',img)                   
 
         k = cv2.waitKey(30) & 0xFF
         if k == 27:
