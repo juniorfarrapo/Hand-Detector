@@ -14,7 +14,7 @@ amarelo = [0, 255, 255]
 preto = [0, 0, 0]
 branco = [255, 255, 255]
 
-dedos = np.zeros((5,5,4))
+dedos = np.zeros((5,5,5),dtype=np.int)
 dedos_cont = 0;
 
 parser = argparse.ArgumentParser()
@@ -122,8 +122,10 @@ if __name__ == "__main__":
                 maior_dedo = hull[0]
                 for i in hull:
                     if i[0][1] < 400:
-                        dedos[dedos_cont,j,0] = i[0][0]
-                        dedos[dedos_cont,j,1] = i[0][1]
+                        if(j<5):
+                            dedos[dedos_cont,j,0] = i[0][0]
+                            dedos[dedos_cont,j,1] = i[0][1]
+                            dedos[dedos_cont,j,3] = distancia((i[0][0],i[0][1]), (cx,cy))
                         cv2.line(img, (i[0][0],i[0][1]), (cx,cy), azul, 2)
                         d = distancia((i[0][0],i[0][1]), (cx,cy))
                         j = j + 1
@@ -132,31 +134,38 @@ if __name__ == "__main__":
                             d_maior = d
                 
                 ###############
-                
+                print dedos
 
                 for i in range(0,5):
-                    dedos[dedos_cont,j,2] = angulo((dedos[dedos_cont,1,0],dedos[dedos_cont,1,1]),centr,maior_dedo[0])
-
-                for i in hull:
-                    if i[0][1] < 400:
-                        inicio = (i[0][0],i[0][1]) 
-                        if(angulo(inicio,centr,maior_dedo[0])>20 and angulo(inicio,centr,maior_dedo[0])<35 and inicio[0]<maior_dedo[0][0]):
-                            cv2.putText(img,'anelar', (i[0][0],i[0][1] + 40),1,1,branco)
-                        elif(angulo(inicio,centr,maior_dedo[0])>40 and angulo(inicio,centr,maior_dedo[0])<55 and inicio[0]<maior_dedo[0][0]):
-                            cv2.putText(img,'minimo', (i[0][0],i[0][1] + 40),1,1,branco)
-                        elif(angulo(inicio,centr,maior_dedo[0])==0):
-                            cv2.putText(img,'medio', (i[0][0],i[0][1] + 40),1,1,branco)
-                        elif(angulo(inicio,centr,maior_dedo[0])>20 and angulo(inicio,centr,maior_dedo[0])<35 and inicio[0]>maior_dedo[0][0]):
-                            cv2.putText(img,'indicador', (i[0][0],i[0][1] + 40),1,1,branco)
-                        elif(angulo(inicio,centr,maior_dedo[0])>40 and angulo(inicio,centr,maior_dedo[0])<120 and inicio[0]>maior_dedo[0][0]):
-                            cv2.putText(img,'polegar', (i[0][0],i[0][1] + 40),1,1,branco)
+                    ang = angulo((dedos[dedos_cont,i,0],dedos[dedos_cont,i,1]),centr,maior_dedo[0])
+                    if(np.isnan(ang)):
+                        dedos[dedos_cont,i,2] = 0
+                    else:
+                        dedos[dedos_cont,i,2] = int(ang)
+                    if(dedos[dedos_cont,i,2]>20 and dedos[dedos_cont,i,2]<35 and dedos[dedos_cont,i,0]<maior_dedo[0][0]):
+                        cv2.putText(img,'anelar', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
+                        dedos[dedos_cont,i,4] = 4
+                    elif(dedos[dedos_cont,i,2]>40 and dedos[dedos_cont,i,2]<55 and dedos[dedos_cont,i,0]<maior_dedo[0][0]):
+                        cv2.putText(img,'minimo', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
+                        dedos[dedos_cont,i,4] = 5
+                    elif(dedos[dedos_cont,i,2]==0):
+                        cv2.putText(img,'medio', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
+                        dedos[dedos_cont,i,4] = 3
+                    elif(dedos[dedos_cont,i,2]>20 and dedos[dedos_cont,i,2]<35 and dedos[dedos_cont,i,0]>maior_dedo[0][0]):
+                        cv2.putText(img,'indicador', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
+                        dedos[dedos_cont,i,4] = 2
+                    elif(dedos[dedos_cont,i,2]>40 and dedos[dedos_cont,i,2]<120 and dedos[dedos_cont,i,0]>maior_dedo[0][0]):
+                        cv2.putText(img,'polegar', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
+                        dedos[dedos_cont,i,4] = 1
                 
-                dedos_cont +=1
-                if(dedos_cont>=5):
-                    dedos_cont = 0
+                
                 ################
 
-                cv2.imshow('input',img)                   
+                cv2.imshow('input',img)       
+        
+        dedos_cont +=1
+        if(dedos_cont>=5):
+            dedos_cont = 0                    
 
         k = cv2.waitKey(30) & 0xFF
         if k == 27:
