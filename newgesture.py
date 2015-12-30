@@ -14,7 +14,11 @@ amarelo = [0, 255, 255]
 preto = [0, 0, 0]
 branco = [255, 255, 255]
 
-dedos = np.zeros((5,5,5),dtype=np.int)
+dedos_atual = np.zeros((5,5),dtype=np.int)
+dedos_ant = np.zeros((5,5),dtype=np.int)
+dedos_max = np.zeros((5),dtype=np.int)
+dedos_min = np.zeros((5),dtype=np.int)
+dedos_min[:] = 1000
 dedos_cont = 0;
 
 parser = argparse.ArgumentParser()
@@ -65,11 +69,6 @@ def angulo(s,f,e):
 if __name__ == "__main__":
     extrator = cv2.createBackgroundSubtractorMOG2() #extrator do cenario
     extrator.setDetectShadows(False) #nao detectar as sombras
-
-    ###
-    video = cv2.VideoWriter('output2.mp4',cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 20.0, (480,480))
-    ###
-
     cont = 0 #contador de frames
     pause = False
     cx = 0
@@ -89,14 +88,13 @@ if __name__ == "__main__":
         #recebe imagem, transforma cinza, aplica blur, aplica limiarizacao, busca por contornos e cria uma matriz de zeros
         if not pause:
             img = cap.read()[1]
-            
-            #b,g,r = cv2.split(img)
             gray = extrator.apply(img,None,0)
-            #blur = cv2.medianBlur(gray, 5)
+
             try:
                 contours, hierarchy = cv2.findContours(gray,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
             except:
                 break
+
             if(len(contours) > 0):
                 cnt = contours[0]
                 #busca maior contorno e salva em cnt
@@ -122,16 +120,17 @@ if __name__ == "__main__":
                 hull = cv2.approxPolyDP(hull,epsilon=13,closed=True)
                 
                 cv2.drawContours(img,[hull],0,(0,0,255),2)
+
                 j = 0
                 d_maior = 0
                 maior_dedo = hull[0]
                 for i in hull:
                     if i[0][1] < 400:
                         if(j<5):
-                            dedos[dedos_cont,j,0] = i[0][0]
-                            dedos[dedos_cont,j,1] = i[0][1]
-                            dedos[dedos_cont,j,3] = distancia((i[0][0],i[0][1]), (cx,cy))
-                        #cv2.line(img, (i[0][0],i[0][1]), (cx,cy), azul, 2)
+                            dedos_atual[j,0] = i[0][0]
+                            dedos_atual[j,1] = i[0][1]
+                            dedos_atual[j,3] = distancia((i[0][0],i[0][1]), (cx,cy))
+                        cv2.line(img, (i[0][0],i[0][1]), (cx,cy), azul, 2)
                         d = distancia((i[0][0],i[0][1]), (cx,cy))
                         j = j + 1
                         if d > d_maior:
@@ -142,62 +141,108 @@ if __name__ == "__main__":
                 #print dedos
 
                 for i in range(0,5):
-                    ang = angulo((dedos[dedos_cont,i,0],dedos[dedos_cont,i,1]),centr,maior_dedo[0])
+                    ang = angulo((dedos_atual[i,0],dedos_atual[i,1]),centr,maior_dedo[0])
                     if(np.isnan(ang)):
-                        dedos[dedos_cont,i,2] = 0
+                        dedos_atual[i,2] = 0
                     else:
-                        dedos[dedos_cont,i,2] = int(ang)
-                    if(dedos[dedos_cont,i,2]>20 and dedos[dedos_cont,i,2]<35 and dedos[dedos_cont,i,0]<maior_dedo[0][0]):
-                        #cv2.putText(img,'anelar', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                        dedos[dedos_cont,i,4] = 4
-                    elif(dedos[dedos_cont,i,2]>40 and dedos[dedos_cont,i,2]<55 and dedos[dedos_cont,i,0]<maior_dedo[0][0]):
-                        #cv2.putText(img,'minimo', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                        dedos[dedos_cont,i,4] = 5
-                    elif(dedos[dedos_cont,i,2]==0):
-                        #cv2.putText(img,'medio', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                        dedos[dedos_cont,i,4] = 3
-                    elif(dedos[dedos_cont,i,2]>20 and dedos[dedos_cont,i,2]<35 and dedos[dedos_cont,i,0]>maior_dedo[0][0]):
-                        #cv2.putText(img,'indicador', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                        dedos[dedos_cont,i,4] = 2
-                    elif(dedos[dedos_cont,i,2]>40 and dedos[dedos_cont,i,2]<120 and dedos[dedos_cont,i,0]>maior_dedo[0][0]):
-                        #cv2.putText(img,'polegar', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                        dedos[dedos_cont,i,4] = 1
+                        dedos_atual[i,2] = int(ang)
+                    if(dedos_atual[i,2]>20 and dedos_atual[i,2]<35 and dedos_atual[i,0]<maior_dedo[0][0]):
+                        cv2.putText(img,'anelar', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                        dedos_atual[i,4] = 4
+                    elif(dedos_atual[i,2]>40 and dedos_atual[i,2]<55 and dedos_atual[i,0]<maior_dedo[0][0]):
+                        cv2.putText(img,'minimo', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                        dedos_atual[i,4] = 5
+                    elif(dedos_atual[i,2]==0):
+                        cv2.putText(img,'medio', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                        dedos_atual[i,4] = 3
+                    elif(dedos_atual[i,2]>20 and dedos_atual[i,2]<35 and dedos_atual[i,0]>maior_dedo[0][0]):
+                        cv2.putText(img,'indicador', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                        dedos_atual[i,4] = 2
+                    elif(dedos_atual[i,2]>40 and dedos_atual[i,2]<120 and dedos_atual[i,0]>maior_dedo[0][0]):
+                        cv2.putText(img,'polegar', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                        dedos_atual[i,4] = 1
                 
-                new_dedo = dedos[dedos_cont]
-                new_dedo.view('i8,i8,i8,i8,i8').sort(order=['f4'], axis=0)
-                dedos[dedos_cont] = new_dedo
+                #new_dedo = dedos[dedos_cont]
+                dedos_atual.view('i8,i8,i8,i8,i8').sort(order=['f4'], axis=0)
+                #dedos[dedos_cont] = new_dedo
                
-                for i in range(0,5):
-                    for j in range(0,5):
-                        if (i != j) and dedos[dedos_cont,i,4] == dedos[dedos_cont,j,4]:
-                            if dedos_cont == 0:
-                                dedos[dedos_cont,i] = dedos[4,i]
-                            else:
-                                dedos[dedos_cont,i] = dedos[dedos_cont-1,i]
 
-                for i in range(0,5):
-                    cv2.line(img, (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1]), (cx,cy), azul, 2)
-                    if dedos[dedos_cont,i,4] == 1:
-                        cv2.putText(img,'polegar', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                    elif dedos[dedos_cont,i,4] == 2:
-                        cv2.putText(img,'indicador', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                    elif dedos[dedos_cont,i,4] == 3:
-                        cv2.putText(img,'medio', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                    elif dedos[dedos_cont,i,4] == 4:
-                        cv2.putText(img,'anelar', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
-                    elif dedos[dedos_cont,i,4] == 5:
-                        cv2.putText(img,'minimo', (dedos[dedos_cont,i,0],dedos[dedos_cont,i,1] + 40),1,1,branco)
+                #for i in range(0,5):
+                #    for j in range(0,5):
+                #        if (i != j) & dedos_atual[i,4] == dedos_atual[j,4]:
+                #            dedos_atual[i] = dedos_ant[i]
+
+                #if dedos_cont <= 20:
+                #    for i in range(0,5):
+                #        if dedos_atual[i,4] == 1:
+                #            d1 = dedos_atual[i,3]/3
+                #            print dedos_cont
+                #        elif dedos_atual[i,4] == 2:
+                #            d2 = dedos_atual[i,3]/3
+                #        elif dedos_atual[i,4] == 3:
+                #            d3 = dedos_atual[i,3]/3
+                #        elif dedos_atual[i,4] == 4:
+                #            d4 = dedos_atual[i,3]/3
+                #        elif dedos_atual[i,4] == 5:
+                #            d5 = dedos_atual[i,3]/3
+
+                #for i in range(0,5):
+                #    dedos_atual[i,3] = dedos_atual[i,3] - dedos_atual[i,3]/3
+                #    if dedos_atual[i,3] < 0:
+                #        dedos_atual[i,3] = 0
+
+                #for i in range(0,5):
+                #    cv2.line(img, (dedos_atual[i,0],dedos_atual[i,1]), (cx,cy), azul, 2)
+                #    if dedos_atual[i,4] == 1:
+                #        cv2.putText(img,'polegar', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                #        print 'Polegar d = ' + str(dedos_atual[i,3])
+                #    elif dedos_atual[i,4] == 2:
+                #        cv2.putText(img,'indicador', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                #        print 'Indicador d = ' + str(dedos_atual[i,3])
+                #    elif dedos_atual[i,4] == 3:
+                #        cv2.putText(img,'medio', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                #        print 'Medio d = ' + str(dedos_atual[i,3])
+                #    elif dedos_atual[i,4] == 4:
+                #        cv2.putText(img,'anelar', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                #        print 'Anelar d = ' + str(dedos_atual[i,3])
+                #    elif dedos_atual[i,4] == 5:
+                #        cv2.putText(img,'minimo', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
+                #        print 'Minimo d = ' + str(dedos_atual[i,3])
                 #print dedos
+
+                if dedos_cont > 50 and dedos_cont < 200:
+                    print 'Deixe a mao aberta'
+                    for i in range(0,5):
+                        if dedos_max[i] < dedos_atual[i,3]:
+                            dedos_max[i] = dedos_atual[i,3]
+                
+                if dedos_cont > 200 and dedos_cont < 350:
+                    print 'Deixe a mao fechada'
+                    for i in range(0,5):
+                        if dedos_min[i] > dedos_atual[i,3]:
+                            dedos_min[i] = dedos_atual[i,3]
+
+
+                if dedos_cont == 360:
+                    print dedos_max
+                    print dedos_min
+
+                if dedos_cont > 360:
+                    if dedos_atual[1,4] == 1:
+                        print dedos_atual[1,3] - dedos_min[0]
+                
+                #cv2.circle(img,centr,dedos_atual[i,3]/3,[0,0,255],2)
+
+                dedos_ant = dedos_atual
                 ################
 
                 cv2.imshow('input',img)    
-                #frame = cv2.flip(img,0)   
-                video.write(img)
                 
         
         dedos_cont +=1
-        if(dedos_cont>=5):
-            dedos_cont = 0                    
+        
+        #if(dedos_cont>=5):
+        #    dedos_cont = 0                    
 
         k = cv2.waitKey(30) & 0xFF
         if k == 27:
