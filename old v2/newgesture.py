@@ -20,6 +20,7 @@ dedos_max = np.zeros((5),dtype=np.int)
 dedos_min = np.zeros((5),dtype=np.int)
 dedos_min[:] = 1000
 dedos_cont = 0;
+tecla = 0
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-nf","--frames",type=int,default=30) #Numero de Frames para aprender o cenario
@@ -83,7 +84,7 @@ if __name__ == "__main__":
         if cont == args.frames:
             print "\nConcluido."
 
-
+    cap.set(15,0.1)
     while(cap.isOpened()):
         #recebe imagem, transforma cinza, aplica blur, aplica limiarizacao, busca por contornos e cria uma matriz de zeros
         if not pause:
@@ -162,74 +163,30 @@ if __name__ == "__main__":
                         cv2.putText(img,'polegar', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
                         dedos_atual[i,4] = 1
                 
-                #new_dedo = dedos[dedos_cont]
                 dedos_atual.view('i8,i8,i8,i8,i8').sort(order=['f4'], axis=0)
-                #dedos[dedos_cont] = new_dedo
-               
 
-                #for i in range(0,5):
-                #    for j in range(0,5):
-                #        if (i != j) & dedos_atual[i,4] == dedos_atual[j,4]:
-                #            dedos_atual[i] = dedos_ant[i]
 
-                #if dedos_cont <= 20:
-                #    for i in range(0,5):
-                #        if dedos_atual[i,4] == 1:
-                #            d1 = dedos_atual[i,3]/3
-                #            print dedos_cont
-                #        elif dedos_atual[i,4] == 2:
-                #            d2 = dedos_atual[i,3]/3
-                #        elif dedos_atual[i,4] == 3:
-                #            d3 = dedos_atual[i,3]/3
-                #        elif dedos_atual[i,4] == 4:
-                #            d4 = dedos_atual[i,3]/3
-                #        elif dedos_atual[i,4] == 5:
-                #            d5 = dedos_atual[i,3]/3
-
-                #for i in range(0,5):
-                #    dedos_atual[i,3] = dedos_atual[i,3] - dedos_atual[i,3]/3
-                #    if dedos_atual[i,3] < 0:
-                #        dedos_atual[i,3] = 0
-
-                #for i in range(0,5):
-                #    cv2.line(img, (dedos_atual[i,0],dedos_atual[i,1]), (cx,cy), azul, 2)
-                #    if dedos_atual[i,4] == 1:
-                #        cv2.putText(img,'polegar', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
-                #        print 'Polegar d = ' + str(dedos_atual[i,3])
-                #    elif dedos_atual[i,4] == 2:
-                #        cv2.putText(img,'indicador', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
-                #        print 'Indicador d = ' + str(dedos_atual[i,3])
-                #    elif dedos_atual[i,4] == 3:
-                #        cv2.putText(img,'medio', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
-                #        print 'Medio d = ' + str(dedos_atual[i,3])
-                #    elif dedos_atual[i,4] == 4:
-                #        cv2.putText(img,'anelar', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
-                #        print 'Anelar d = ' + str(dedos_atual[i,3])
-                #    elif dedos_atual[i,4] == 5:
-                #        cv2.putText(img,'minimo', (dedos_atual[i,0],dedos_atual[i,1] + 40),1,1,branco)
-                #        print 'Minimo d = ' + str(dedos_atual[i,3])
-                #print dedos
-
-                if dedos_cont > 50 and dedos_cont < 200:
+                if tecla == 97:
                     print 'Deixe a mao aberta'
                     for i in range(0,5):
                         if dedos_max[i] < dedos_atual[i,3]:
                             dedos_max[i] = dedos_atual[i,3]
                 
-                if dedos_cont > 200 and dedos_cont < 350:
+                if tecla == 102:
                     print 'Deixe a mao fechada'
                     for i in range(0,5):
                         if dedos_min[i] > dedos_atual[i,3]:
                             dedos_min[i] = dedos_atual[i,3]
 
 
-                if dedos_cont == 360:
+                if dedos_cont == 150:
                     print dedos_max
                     print dedos_min
 
-                if dedos_cont > 360:
-                    if dedos_atual[1,4] == 1:
-                        print dedos_atual[1,3] - dedos_min[0]
+                if dedos_cont > 10:
+                    for i in range(0,5):
+                        if dedos_atual[i,4] == 1:
+                            print dedos_atual[i,3] - dedos_min[0]
                 
                 #cv2.circle(img,centr,dedos_atual[i,3]/3,[0,0,255],2)
 
@@ -240,11 +197,14 @@ if __name__ == "__main__":
                 
         
         dedos_cont +=1
-        
+        #97 a
+        #102 f4
         #if(dedos_cont>=5):
         #    dedos_cont = 0                    
 
         k = cv2.waitKey(30) & 0xFF
+        tecla = k
+
         if k == 27:
             break
         elif k == 32:

@@ -32,6 +32,7 @@ polegar = Dedo()
 indicador = Dedo()
 
 dedos_detectados = [minimo, anelar, medio, indicador, polegar]
+dedos_menor_tam  = {"minimo": None, "anelar": None, "medio": None, "indicador": None, "polegar": None}
 
 if args.arquivo:
 	print "Capturando a partir do arquivo..."
@@ -206,11 +207,12 @@ def estimaPosicao(dedo, approx):
 	y = centro[1] - np.cos(angulo) * tamanho
 	return (int(x), int(y))
 
+
 if __name__ == "__main__":
 	extrator = capturaCenario(args.frames)
 	pause = False
 
-	while(True):
+	while(cap.isOpened()):
 		if not pause:
 			ok, frame = cap.read()
 			if not ok:
@@ -227,12 +229,20 @@ if __name__ == "__main__":
 
 		if args.output:
 			out.write(frame)
+			
 		cv2.imshow('input', frame)
 
-		k = cv2.waitKey(int(1000/framerate)) & 0xFF
+		k = cv2.waitKey(30) & 0xFF
+		#k = cv2.waitKey(int(1000/framerate)) & 0xFF
 		if k == 27:
 			break
 		elif k == 32:
 			pause = not pause
 			cv2.putText(frame, "PAUSE", (10, 40), 1, 2, BRANCO)
 			cv2.imshow("input", frame)
+		elif k == 102:
+		    for dedo in dedos_detectados:
+		        nome = nomeDedo(dedo)
+		        dedos_menor_tam[nome] = dedo.tamanho
+		if not dedos_menor_tam["anelar"] == None:  
+		    print str(dedos_menor_tam["anelar"] - anelar.tamanho)
