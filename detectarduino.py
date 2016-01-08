@@ -5,7 +5,8 @@ import cv2
 import numpy as np
 import argparse
 import sys
-#import serial
+import serial
+import time
 
 class Dedo:
     posicao = (0, 0)
@@ -25,7 +26,8 @@ VERMELHO = [0, 0, 255]
 AZUL = [255, 0, 0]
 BRANCO = [255, 255, 255]
 
-#ser = serial.Serial('/dev/ttyUSB0',9600)
+ser = serial.Serial('/dev/ttyACM0',9600)
+contSerial = 0
 
 centro = (0, 0)
 medio = Dedo()
@@ -37,6 +39,8 @@ indicador = Dedo()
 dedos_detectados = [minimo, anelar, medio, indicador, polegar]
 dedos_menor_tam  = {"minimo": None, "anelar": None, "medio": None, "indicador": None, "polegar": None}
 dedos_maior_tam  = {"minimo": None, "anelar": None, "medio": None, "indicador": None, "polegar": None}
+pontuacao = [0, 0, 0, 0, 0]
+contador = 0
 
 d1 = 40
 d2 = 15
@@ -129,7 +133,6 @@ def detectaApprox(contorno):
 
 def detectaMaiorDedo(approx):
     maior_tam = 0
-    menor_x = approx[0][0][0]
     for ponto in approx:
         x = ponto[0][0]
         y = ponto[0][1]
@@ -141,11 +144,6 @@ def detectaMaiorDedo(approx):
                 medio.tamanho = tam
                 medio.posicao = (x, y)
                 medio.detectado = True
-            if x < menor_x:
-                menor_x = x
-                minimo.tamanho = tam
-                minimo.posicao = (x, y)
-                minimo.detectado = True
 
 def detectaDedos(approx):
     for dedo in dedos_detectados:
@@ -172,8 +170,9 @@ def exibeInfo(frame, centro, contorno, approx, dedos_detectados):
     cv2.drawContours(frame,[approx], 0, AZUL, 2)
     cv2.circle(frame, medio.posicao, 5, VERMELHO, -2)
     for dedo in dedos_detectados:
-        cv2.putText(frame, nomeDedo(dedo), dedo.posicao, 1, 1, BRANCO)
-        cv2.line(frame, dedo.posicao, centro, AZUL, 2)
+        if dedo.detectado:
+            cv2.putText(frame, nomeDedo(dedo), dedo.posicao, 1, 1, BRANCO)
+            cv2.line(frame, dedo.posicao, centro, AZUL, 2)
 
 def nomeDedo(dedo):
     if dedo == polegar:
@@ -227,7 +226,7 @@ def transforma(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 def enviaArduino():
-    global d1,d2,d3,d4,d5
+    global d1, d2, d3, d4, d5, contSerial
     a = transforma(minimo.tamanho, dedos_menor_tam["minimo"], dedos_maior_tam["minimo"], 40, 130)
     b = transforma(anelar.tamanho, dedos_menor_tam["anelar"], dedos_maior_tam["anelar"], 15, 140)
     c = transforma(medio.tamanho, dedos_menor_tam["medio"], dedos_maior_tam["medio"], 0, 120)
@@ -256,7 +255,26 @@ def enviaArduino():
         d5 = 40
     dados = "d1:" + '{:03d}'.format(d1) + " d2:" + '{:03d}'.format(d2) + " d3:" + '{:03d}'.format(d3) + " d4:" + '{:03d}'.format(d4) + " d5:" + '{:03d}'.format(d5)
     print dados
-    #ser.write(dados)
+    #ser.flushOutput()
+    contSerial +=1
+    if contSerial >=15:
+        ser.write(dados)
+        contSerial = 0
+    #ser.flush()
+    #time.sleep(0.1)
+    #print ser.readline()
+
+def calculaPontuacao(frames):
+    for i, dedo in enumerate(dedos_detectados):
+        if dedo.detectado:
+            pontuacao[i] = pontuacao[i] + 1
+    if contador % frames == 0:
+        for i in range(len(pontuacao)):
+            if pontuacao[i] >= int(round(0.4 * frames)):
+                dedos_detectados[i].detectado = True
+            else:
+                dedos_detectados[i].detectado = False
+            pontuacao[i] = 0
 
 if __name__ == "__main__":
     extrator = capturaCenario(args.frames)
@@ -264,6 +282,7 @@ if __name__ == "__main__":
 
     while(cap.isOpened()):
         if not pause:
+            contador = contador + 1
             ok, frame = cap.read()
             if not ok:
                 break
@@ -275,11 +294,12 @@ if __name__ == "__main__":
             centro = detectaCentro(cnt)
             approx = detectaApprox(cnt)
             detectaDedos(approx)
+            calculaPontuacao(10)
             exibeInfo(frame, centro, cnt, approx, dedos_detectados)
 
         if args.output:
             out.write(frame)
-            
+        
         cv2.imshow('input', frame)
 
         k = cv2.waitKey(30) & 0xFF
