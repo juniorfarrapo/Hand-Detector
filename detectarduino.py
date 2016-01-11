@@ -6,7 +6,6 @@ import numpy as np
 import argparse
 import sys
 import serial
-import time
 
 class Dedo:
     posicao = (0, 0)
@@ -36,6 +35,7 @@ minimo = Dedo()
 polegar = Dedo()
 indicador = Dedo()
 
+dedo_referencia = medio
 dedos_detectados = [minimo, anelar, medio, indicador, polegar]
 dedos_menor_tam  = {"minimo": None, "anelar": None, "medio": None, "indicador": None, "polegar": None}
 dedos_maior_tam  = {"minimo": None, "anelar": None, "medio": None, "indicador": None, "polegar": None}
@@ -132,6 +132,7 @@ def detectaApprox(contorno):
     return approx
 
 def detectaMaiorDedo(approx):
+    global dedo_referencia
     maior_tam = 0
     for ponto in approx:
         x = ponto[0][0]
@@ -141,18 +142,23 @@ def detectaMaiorDedo(approx):
             tam = distancia((x, y), centro)
             if tam > maior_tam:
                 maior_tam = tam
-                medio.tamanho = tam
-                medio.posicao = (x, y)
-                medio.detectado = True
+                if x > centro[0]:
+                    dedo_referencia = indicador
+                else:
+                    dedo_referencia = medio
+                dedo_referencia.tamanho = tam
+                dedo_referencia.posicao = (x, y)
+                dedo_referencia.detectado = True
 
 def detectaDedos(approx):
+    global dedo_referencia
     for dedo in dedos_detectados:
         dedo.detectado = False
     detectaMaiorDedo(approx)
     for ponto in approx:
         pos = (ponto[0][0], ponto[0][1])
         tam = distancia(pos, centro)
-        ang = angulo(pos, centro, medio.posicao)
+        ang = angulo(pos, centro, dedo_referencia.posicao)
         dedo = identificaDedo(ang, pos[0])
         if dedo != None:
             dedo.detectado = True
@@ -254,15 +260,11 @@ def enviaArduino():
     if polegar.detectado == False:
         d5 = 40
     dados = "d1:" + '{:03d}'.format(d1) + " d2:" + '{:03d}'.format(d2) + " d3:" + '{:03d}'.format(d3) + " d4:" + '{:03d}'.format(d4) + " d5:" + '{:03d}'.format(d5)
-    print dados
-    #ser.flushOutput()
+    #print dados
     contSerial +=1
     if contSerial >=15:
         ser.write(dados)
         contSerial = 0
-    #ser.flush()
-    #time.sleep(0.1)
-    #print ser.readline()
 
 def calculaPontuacao(frames):
     for i, dedo in enumerate(dedos_detectados):
@@ -303,7 +305,6 @@ if __name__ == "__main__":
         cv2.imshow('input', frame)
 
         k = cv2.waitKey(30) & 0xFF
-        #k = cv2.waitKey(int(1000/framerate)) & 0xFF
         if k == 27:
             break
         elif k == 32:
