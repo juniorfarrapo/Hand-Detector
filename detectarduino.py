@@ -26,6 +26,7 @@ AZUL = [255, 0, 0]
 BRANCO = [255, 255, 255]
 
 ser = serial.Serial('/dev/ttyACM0',9600)
+#ser = serial.Serial('/dev/cu.usbmodemFD111',9600)
 contSerial = 0
 
 centro = (0, 0)
@@ -56,13 +57,7 @@ if args.arquivo:
         sys.exit(1)
 else:
     print "Capturando a partir da camera..."
-    WIDTH  = 320/2
-    HEIGHT = 240/2
-    CV_WIDTH_ID  = 3
-    CV_HEIGHT_ID = 4
-    cap = cv2.VideoCapture(-1)
-    cap.set(CV_WIDTH_ID, WIDTH);
-    cap.set(CV_HEIGHT_ID, HEIGHT);
+    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print "Erro: nenhuma camera localizada"
         sys.exit(1)
@@ -262,7 +257,7 @@ def enviaArduino():
     dados = "d1:" + '{:03d}'.format(d1) + " d2:" + '{:03d}'.format(d2) + " d3:" + '{:03d}'.format(d3) + " d4:" + '{:03d}'.format(d4) + " d5:" + '{:03d}'.format(d5)
     #print dados
     contSerial +=1
-    if contSerial >=15:
+    if contSerial >=30:
         ser.write(dados)
         contSerial = 0
 
@@ -289,7 +284,7 @@ if __name__ == "__main__":
             if not ok:
                 break
             grey = extrator.apply(frame, None, 0)
-            
+            cv2.imshow('a',grey)
             cnt = detectaContorno(grey)
             if len(cnt) == 0:
                 continue
