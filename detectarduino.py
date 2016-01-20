@@ -235,14 +235,38 @@ def enviaArduino():
     e = transforma(polegar.tamanho, dedos_menor_tam["polegar"], dedos_maior_tam["polegar"], 15, 120)
     if a >= 40 and a <= 130:
         d1 = int(a)
+    if a > 130:
+        d1 = 130
+    if a < 40:
+        d1 = 40
+        
     if b >= 15 and b <= 140:
         d2 = int(b)
+    if b > 140:
+        d2 = 140
+    if b < 15:
+        d2 = 15
+        
     if c >= 0 and c<= 120:
         d3 = int(c)
+    if c > 120:
+        d3 = 120
+    if c < 0:
+        d3 = 0
+        
     if d >= 0 and d <= 120:
         d4 = int(d)
+    if d > 120:
+        d4 = 120
+    if d < 0:
+        d4 = 0
+        
     if e >= 15 and e <= 120:
-        d5 = int(e)  
+        d5 = int(e) 
+    if e > 120:
+        d5 = 120 
+    if e < 0:
+        d5 = 0
 
     if anelar.detectado == False and minimo.detectado == False:
         d2 = 15
@@ -260,6 +284,7 @@ def enviaArduino():
     if contSerial >=30:
         ser.write(dados)
         contSerial = 0
+        #print dados
 
 def calculaPontuacao(frames):
     for i, dedo in enumerate(dedos_detectados):
@@ -284,7 +309,6 @@ if __name__ == "__main__":
             if not ok:
                 break
             grey = extrator.apply(frame, None, 0)
-            cv2.imshow('a',grey)
             cnt = detectaContorno(grey)
             if len(cnt) == 0:
                 continue
