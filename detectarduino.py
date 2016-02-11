@@ -25,8 +25,8 @@ VERMELHO = [0, 0, 255]
 AZUL = [255, 0, 0]
 BRANCO = [255, 255, 255]
 
-ser = serial.Serial('/dev/ttyACM0',9600)
-#ser = serial.Serial('/dev/cu.usbmodemFD111',9600)
+#ser = serial.Serial('/dev/ttyACM0',9600)
+ser = serial.Serial('/dev/cu.usbmodemFA131',9600)
 contSerial = 0
 
 centro = (0, 0)
@@ -279,12 +279,10 @@ def enviaArduino():
     if polegar.detectado == False:
         d5 = 40
     dados = "d1:" + '{:03d}'.format(d1) + " d2:" + '{:03d}'.format(d2) + " d3:" + '{:03d}'.format(d3) + " d4:" + '{:03d}'.format(d4) + " d5:" + '{:03d}'.format(d5)
-    #print dados
     contSerial +=1
     if contSerial >=30:
         ser.write(dados)
         contSerial = 0
-        #print dados
 
 def calculaPontuacao(frames):
     for i, dedo in enumerate(dedos_detectados):
